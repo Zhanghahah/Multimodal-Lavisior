@@ -1,2 +1,4 @@
-# Multimodal-Lavisior
-multi modal LLM framework for specific tasks, including AI4S, vision-text. etc.
+# Multimodal LLM for multi tasks: Towards AI for Chemistry and IQA
+
+This repository holds the code and data of multimodal LLM: towards AI for chemistry and IQA.
+.
