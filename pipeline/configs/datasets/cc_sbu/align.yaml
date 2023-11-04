@@ -1,0 +1,5 @@
+datasets:
+  cc_sbu_align:
+    data_type: pyg_graph
+    build_info:
+      storage: dataset/uspto_QA_train.pkl  # list of ['graph', 'question', 'answer'] dict
