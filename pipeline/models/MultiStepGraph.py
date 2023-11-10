@@ -28,7 +28,7 @@ class AttentionPooling(torch.nn.Module):
         max_node = n_nodes.max().item() + 1
 
         device = graph_emb.device
-        batch_mask = torch.zeros(batch_size, max_node).to(device)
+        batch_mask = torch.zeros(batch_size, max_node).bool().to(device)
         all_feats = torch.zeros(batch_size, max_node, self.emb_dim).to(device)
 
         for idx, x in enumerate(n_nodes):
