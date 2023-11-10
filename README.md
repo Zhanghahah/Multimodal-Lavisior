@@ -1,29 +1,56 @@
-# Multimodal LLM for multi tasks: Towards AI for Chemistry and IQA
+# Multimodal LLM for multi tasks: Towards AI for Chemistry
 
-This repository holds the code and data of DrugChat: Towards Enabling ChatGPT-Like Cap Drug Molecule Graphs.
+This repository holds the code and data of Lavoisier: Towards specific chemical tasks: Forward Prediction, Retrosynthesis, Condition Generation, Yield Prediction.
 
 
 ## Examples
 
-![demo1](figs/examples/demo.png) 
+
 
 
 ## Introduction
-- In this work, we make an initial attempt towards enabling ChatGPT-like capabilities on drug molecule graphs, by developing a prototype system DrugChat.
-- DrugChat works in a similar way as ChatGPT. Users upload a compound molecule graph and ask various questions about this compound. DrugChat will answer these questions in a multi-turn, interactive manner. 
-- The DrugChat system consists of a graph neural network (GNN), a large language model (LLM), and an adaptor. The GNN takes a compound molecule graph as input and learns a representation for this graph. The adaptor transforms the graph representation produced by the GNN  into another  representation that is acceptable to the  LLM. The LLM takes the compound representation transformed by the adaptor and users' questions about this compound as inputs and generates answers. All these components are trained end-to-end.
-- To train DrugChat, we collected   instruction tuning datasets which contain 10,834 drug compounds and 143,517 question-answer pairs.
+- In this work, we make an initial attempt towards enabling ChatGPT-like capabilities on drug molecule graphs, by developing a prototype multimodal chemical model
+- The whole system consists of a graph neural network (GNN), a large language model (LLM), and an project layer. The GNN takes a compound molecule graph or a reaction reresentation as input and learns a representation for this graph. The project layer transforms the graph representation produced by the GNN  into another  representation that is acceptable to the  LLM. The LLM takes the compound representation transformed by the adaptor and users' questions about this reaction as inputs and generates answers. All these steps are trained end-to-end.
+- To train multimodal Lavoisier, we collected self-instruction tuning datasets from USPTO-50k.
 
 
 
-## Datasets
+## Datasets 
 
 The file `dataset/IQA.py` contains cooked data for Supervised Instruction Tuning DatasetThe data structure is as follows. 
 
 - {SMILES String: [ [Question1 , Answer1], [Question2 , Answer2]... ] }
 - {<image> [Task descritor, answer]}
 
+## GNN Pipeline Clarification
 
+**1. datasets**
+- cook graph data 
+```
+dataset/uspto_smiles2graph.py: 
+    input: smiles
+    output: {"graph": graph, "question": question, "answer": str(answer)}
+```
+```
+dataset/combine_convert_datasets:
+    input:{"graph": graph, "question": question, "answer": str(answer)}
+    output: endow graph to Data() in dgl ex:graph = Data(x=torch.asarray(g['node_feat']), edge_index=torch.asarray(g['edge_index']), edge_attr=torch.asarray(g['edge_feat']))
+```
+
+```
+
+pipeline/datasets/datasets/cc_sbu_dataset.py
+     graph = rec["graph"]
+     caption = rec["answer"]
+     question = rec["question"]
+```
+- training_loop
+
+```
+pipeline/models/mini_gpt4.py: the input of self.encode_img includes graph, answer, question 
+img_embeds, atts_img = self.encode_img(samples, device)
+
+```
 ## Getting Started
 ### Installation
 These instructions largely follow those in MiniGPT-4.
@@ -33,11 +60,12 @@ These instructions largely follow those in MiniGPT-4.
 Git clone our repository, creating a python environment and ativate it via the following command
 
 ```bash
-git clone https://github.com/UCSD-AI4H/drugchat
-cd drugchat
+git clone https://github.com/Zhanghahah/Multimodal-Lavisior.git
+cd Multimodal-Lavisior
 conda env create -f environment.yml
-conda activate drugchat
 ```
+check the version of torch which need to meet `pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113`
+
 
 Verify the installation of `torch` and `torchvision` is successful by running `python -c "import torchvision; print(torchvision.__version__)"`. If it outputs the version number without any warnings or errors, then you can go to the next step (installing PyTorch Geometric). __If it outputs any warnings or errors__, try to uninstall `torch` by `conda uninstall pytorch torchvision torchaudio cudatoolkit` and then reinstall them following [here](https://pytorch.org/get-started/previous-versions/#v1121). You need to find the correct command according to the CUDA version your GPU driver supports (check `nvidia-smi`). For example, I found my GPU driver supported CUDA 11.6, so I run `conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.6 -c pytorch -c conda-forge`.
 
@@ -64,9 +92,9 @@ Then, set the path to the vicuna weight in the model config file
 ### Training
 **You need roughly 40 GB GPU memory for the training.** 
 
-The training configuration file is [train_configs/drugchat_image_mol.yaml](train_configs/drugchat_image_mol.yaml). You may want to change the number of epochs and other hyper-parameters there, such as `max_epoch`, `init_lr`, `min_lr`,`warmup_steps`, `batch_size_train`. You need to adjust `iters_per_epoch` so that `iters_per_epoch` * `batch_size_train` = your training set size.
+The training configuration file is [train_configs/drugchat_stage2_finetune.yaml](train_configs/drugchat_stage2_finetune.yaml). You may want to change the number of epochs and other hyper-parameters there, such as `max_epoch`, `init_lr`, `min_lr`,`warmup_steps`, `batch_size_train`. You need to adjust `iters_per_epoch` so that `iters_per_epoch` * `batch_size_train` = your training set size.
 
-Start training the projection layer that connects the GNN output and the LLaMA model by running `sh image_mol.sh`. 
+Start training the projection layer that connects the GNN output and the LLaMA model by running `sh finetune_gnn.sh`. 
 
 ### Inference 
 #### IQA task
@@ -77,7 +105,7 @@ pipeline/output/pipeline_image_mol/20231024181/checkpoint_1.pt
 
 **modify file inference configuration in line 11 [eval_configs/image_mol_infer.yaml](eval_configs/image_mol_infer.yaml), then run `sh inference_imgMol.sh`**
 
-#### Laivisor
+#### Lavoisier
 **To get the inference to work properly, you need to create another environment (`rdkit`) and launch a backend process which converts SMILES strings to Torch Geometric graphs.**
 
 **It takes around 24 GB GPU memory for the demo.**
@@ -118,11 +146,3 @@ Trained models and demo websites will be released after we thoroughly validate t
 
 ## Citation
 
-If you're using DrugChat in your research or applications, please cite using this BibTeX:
-```bibtex
-@article{liang2023drugchat,
-  title={DrugChat: Towards Enabling ChatGPT-Like Capabilities on Drug Molecule Graphs},
-  author={Liang, Youwei and Zhang, Ruiyi and Zhang, li and Xie, Pengtao},
-  journal={TechRxiv},
-  year={2023}
-}
