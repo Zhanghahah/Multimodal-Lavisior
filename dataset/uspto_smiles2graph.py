@@ -11,10 +11,17 @@ import pickle
 from tqdm import tqdm
 from rdkit.Chem.rdchem import BondType, BondDir, ChiralType
 
-BOND_TYPE = {BondType.SINGLE: 0, BondType.DOUBLE: 1, BondType.TRIPLE: 2, BondType.AROMATIC: 3}
-BOND_DIR = {BondDir.NONE: 0, BondDir.ENDUPRIGHT: 1, BondDir.ENDDOWNRIGHT: 2}
-CHI = {ChiralType.CHI_UNSPECIFIED: 0, ChiralType.CHI_TETRAHEDRAL_CW: 1, ChiralType.CHI_TETRAHEDRAL_CCW: 2,
-       ChiralType.CHI_OTHER: 3}
+BOND_TYPE = {
+    BondType.SINGLE: 0, BondType.DOUBLE: 1,
+    BondType.TRIPLE: 2, BondType.AROMATIC: 3
+}
+BOND_DIR = {
+    BondDir.NONE: 0, BondDir.ENDUPRIGHT: 1, BondDir.ENDDOWNRIGHT: 2
+}
+CHI = {
+    ChiralType.CHI_UNSPECIFIED: 0, ChiralType.CHI_TETRAHEDRAL_CW: 1,
+    ChiralType.CHI_TETRAHEDRAL_CCW: 2, ChiralType.CHI_OTHER: 3
+}
 
 
 def bond_dir(bond):
@@ -91,10 +98,12 @@ def smiles2graph(smiles_string):
             edges_list.append((j, i))
             edge_features_list.append(edge_feature)
 
-        # data.edge_index: Graph connectivity in COO format with shape [2, num_edges]
+        # data.edge_index: Graph connectivity in
+        # COO format with shape [2, num_edges]
         edge_index = np.array(edges_list, dtype=np.int64).T
 
-        # data.edge_attr: Edge feature matrix with shape [num_edges, num_edge_features]
+        # data.edge_attr: Edge feature matrix with
+        # shape [num_edges, num_edge_features]
         edge_attr = np.array(edge_features_list, dtype=np.int64)
 
     else:  # mol has no bonds
@@ -108,6 +117,7 @@ def smiles2graph(smiles_string):
     graph['num_nodes'] = len(x)
 
     return graph
+
 
 def parse_json(path):
     with open(path) as r:
@@ -126,13 +136,37 @@ def convert_uspto(path):
     total_length = len(raw_data)
     for i in tqdm(range(0, total_length)):
         data = raw_data[i]
-        if data['type'] == 'reactants':
-            smiles = data['input']  # smiles for reactants, products, or reagents
+        if data['type'] in ['reactants', 'products']:
+            # smiles for reactants, products, or reagents
+            smiles = data['input']
             question = data['instruction']
             answer = data['output']
             graph = smiles2graph(smiles)
 
-            out.append({"graph": graph, "question": question, "answer": str(answer)})
+            out.append({
+                "graph": graph,
+                "question": question,
+                "answer": str(answer)
+            })
+        elif data['type'] in ['classification', 'yield']:
+            reac, reag, prod = data['input'].split('>>')
+            out.append({
+                'reactants': smiles2graph(reac),
+                'products': smiles2graph(prod),
+                'reagents': smiles2graph(reag),
+                'question': data['instruction'],
+                'answer': str(data['output'])
+            })
+        elif data['type'] == 'reagents':
+            reac, prod = data['input'].split('>>')
+            out.append({
+                'reactants': smiles2graph(reac),
+                'products': smiles2graph(prod),
+                'question': data['instruction'],
+                'answer': str(data['output'])
+            })
+        else:
+            raise NotImplementedError(f'Invalid type {data["type"]}')
 
     with open("/home/zhangyu/drugchat/dataset/uspto_QA_retrosynthesis_test.pkl", "wb") as f:
         pickle.dump(out, f)
