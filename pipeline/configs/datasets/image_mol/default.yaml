@@ -2,4 +2,4 @@ datasets:
   image_mol:
     data_type: image
     build_info:
-      storage: /home/zhangyu/data/1K/KoNViD_1k_images
+      storage: /data/zhangyu/own_data/VQA/1K/KoNViD_1k_images

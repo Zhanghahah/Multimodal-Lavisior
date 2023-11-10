@@ -159,7 +159,7 @@ class MetricLogger(object):
                             memory=torch.cuda.max_memory_allocated() / MB,
                         )
                     )
-                    with open("/home/zhangyu/drugchat/log.txt", "a") as f:
+                    with open("./log.txt", "a") as f:
                         f.write(log_msg.format(
                             i,
                             len(iterable),

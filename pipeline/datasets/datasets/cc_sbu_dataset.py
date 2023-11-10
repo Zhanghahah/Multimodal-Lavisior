@@ -101,6 +101,8 @@ class CCSBUAlignDataset(Dataset):
         }
 
     def __getitem__1(self, index):
+        import pudb 
+        pudb.set_trace()
         rec = self.data[index]
         graph = rec["graph"]
         caption = rec["answer"]

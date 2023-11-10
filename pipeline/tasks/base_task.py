@@ -205,9 +205,7 @@ class BaseTask:
 
             if i >= iters_per_epoch:
                 break
-
             samples = next(data_loader)
-
             samples = prepare_sample(samples, cuda_enabled=cuda_enabled)
             samples.update(
                 {
