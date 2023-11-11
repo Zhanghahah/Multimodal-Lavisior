@@ -35,17 +35,6 @@ class AttentionPooling(torch.nn.Module):
             batch_mask[idx, :x.item()] = True
 
         all_feats[batch_mask] = graph_emb
-        # [bs, max_node (dynamic), dim]
-        # [
-        #   reactants,
-        #   rxn
-        # ]
-        # 
-        # [
-        #   [1, node, dim],
-        #   [1, 1, dim]
-        # ]
-        # 
 
         attn_o, attn_w = self.pooler(
             query=self.qry_embedding.repeat(batch_size, 1, 1),
@@ -152,24 +141,28 @@ class SelfLoopGATConv(MessagePassing):
 
 class RXNGAT(torch.nn.Module):
     def __init__(
-        self, n_layer, emb_dim, dropout=0.1, negative_slope=0.2,
-        heads=1, component_keys={'reactants', 'products'}
+        self, n_layer, emb_dim, gnn_dim, negative_slope=0.2,
+        dropout=0.1, heads=1, component_keys={'reactants', 'products'}
     ):
         super(RXNGAT, self).__init__()
         self.n_layer = n_layer
+        self.emb_dim = emb_dim
+        self.gnn_dim = gnn_dim
         self.from_bond_embs = torch.nn.ModuleDict({
-            torch.nn.Parameter(torch.randn(1, emb_dim))
+            k: torch.nn.Parameter(torch.randn(1, emb_dim))
             for k in component_keys
         })
         self.to_bond_embs = torch.nn.ModuleDict({
-            torch.nn.Parameter(torch.randn(1, emb_dim))
+            k: torch.nn.Parameter(torch.randn(1, emb_dim))
             for k in component_keys
         })
         self.component_keys = component_keys
 
         self.Attn_pools = torch.nn.ModuleDict({
-            AttentionPooling(emb_dim, num_heads=heads, dropout=dropout)
-            for k in component_keys
+            k: AttentionPooling(
+                emb_dim, num_heads=heads, dropout=dropout,
+                emb_dim=gnn_dim
+            ) for k in component_keys
         })
         self.rxn_key_emb = torch.nn.Parameter(torch.randn(emb_dim))
 

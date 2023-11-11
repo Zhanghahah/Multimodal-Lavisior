@@ -225,12 +225,11 @@ class GNN(torch.nn.Module):
         node/graph representations
 
     """
-    def __init__(self, num_layer, emb_dim, JK = "last", drop_ratio = 0, gnn_type = "gin", use_graph_agg=False):
+    def __init__(self, num_layer, emb_dim, JK = "last", drop_ratio = 0, gnn_type = "gin"):
         super(GNN, self).__init__()
         self.num_layer = num_layer
         self.drop_ratio = drop_ratio
         self.JK = JK
-        self.use_graph_agg = use_graph_agg
 
         if self.num_layer < 2:
             raise ValueError("Number of GNN layers must be greater than 1.")
@@ -298,11 +297,6 @@ class GNN(torch.nn.Module):
         elif self.JK == "sum":
             h_list = [h.unsqueeze_(0) for h in h_list]
             node_representation = torch.sum(torch.cat(h_list, dim = 0), dim = 0)[0]
-
-        if self.use_graph_agg:
-            graph_agg = scatter_mean(node_representation, data.batch, dim=0, dim_size=data.num_graphs)
-            graph_agg = graph_agg.unsqueeze(1)  # [bz, 1, feat_size]
-            return graph_agg
 
         return node_representation
 

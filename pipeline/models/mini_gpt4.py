@@ -17,6 +17,7 @@ from pipeline.models.base_model import BaseModel
 from transformers import StoppingCriteria, StoppingCriteriaList
 
 from pipeline.models.image_mol import ImageMol
+from pipeline.models.MultiStepGraph import AttentionPooling, RXNGAT
 
 
 class StoppingCriteriaSub(StoppingCriteria):
@@ -138,7 +139,7 @@ class MiniGPT4(BaseModel):
     def create_gnn(self, model_path, freeze):
         print('Loading GNN')
         print(f"use_graph_agg={self.use_graph_agg}")
-        self.gnn = GNN(num_layer=5, emb_dim=300, gnn_type='gcn', use_graph_agg=self.use_graph_agg)
+        self.gnn = GNN(num_layer=5, emb_dim=300, gnn_type='gcn')
         self.gnn.load_from_pretrained(url_or_filename=model_path)
         self.encoder_out_dim = self.gnn.out_dim
 
@@ -148,11 +149,11 @@ class MiniGPT4(BaseModel):
             self.gnn = self.gnn.eval()
             self.gnn.train = disabled_train
             logging.info("freezed GNN")
-        
-        pt = None
-        if not self.use_graph_agg:
-            pt = nn.Parameter(torch.zeros(1, self.gnn.out_dim))
-        self.register_parameter("pad_token", pt)
+
+        if self.use_graph_agg and not self.share_pool_weight:
+            self.pooler = torch.nn.ModuleDict(
+                output_dim=512, 
+            )
         
         print('Loaded GNN')
 
