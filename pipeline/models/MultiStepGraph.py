@@ -160,8 +160,8 @@ class RXNGAT(torch.nn.Module):
 
         self.Attn_pools = torch.nn.ModuleDict({
             k: AttentionPooling(
-                emb_dim, num_heads=heads, dropout=dropout,
-                emb_dim=gnn_dim
+                output_dim=emb_dim, num_heads=heads, 
+                dropout=dropout, emb_dim=gnn_dim
             ) for k in component_keys
         })
         self.rxn_key_emb = torch.nn.Parameter(torch.randn(emb_dim))

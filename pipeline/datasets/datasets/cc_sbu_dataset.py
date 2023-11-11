@@ -85,7 +85,7 @@ class CCSBUAlignDataset(Dataset):
         reac_graphs, reac_idx = [], []
         prod_graphs, prod_idx = [], []
         full_rxn = {"reactants": [], 'products': [], 'reagents': []}
-        rxn_wo_reg = {"reactants": [], 'products': [], 'reagents': []}
+        rxn_wo_reg = {"reactants": [], 'products': []}
         full_rxn_idx, rxn_nreg_idx = [], []
         text_input, questions = [], []
 
@@ -126,7 +126,8 @@ class CCSBUAlignDataset(Dataset):
                     k: Batch.from_data_list(v)
                     for k, v in rxn_wo_reg.items()
                 },
-                'reag_idx': rxn_nreg_idx
+                'reag_idx': rxn_nreg_idx,
+                'batch_size': len(samples)
             }
         }
         if len(questions) > 0:
