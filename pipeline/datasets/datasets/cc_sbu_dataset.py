@@ -10,7 +10,10 @@ from torch_geometric.data import Batch
 
 class CCSBUDataset(BaseDataset):
     def __init__(self, vis_processor, text_processor, location):
-        super().__init__(vis_processor=vis_processor, text_processor=text_processor)
+        super(CCSBUDataset, self).__init__(
+            vis_processor=vis_processor,
+            text_processor=text_processor
+        )
 
         self.inner_dataset = wds.DataPipeline(
             wds.ResampledShards(location),
@@ -52,20 +55,22 @@ class CCSBUAlignDataset0(CaptionDataset):
 
 class CCSBUAlignDataset(Dataset):
     def __init__(
-        self, vis_processor=None, text_processor=None, vis_root=None, ann_paths=[]
+        self, vis_processor=None, text_processor=None,
+        vis_root=None, ann_paths=[]
     ):
         """
         vis_root (string): Root directory of data
         """
         self.vis_root = vis_root
-        
+
         print(f"Open data file {vis_root}")
         with open(vis_root, "rb") as f:
             out = pickle.load(f)
 
         if "abstract" in out[0]:
             self.qa_mode = False
-            out = [xx for xx in out if xx["abstract"] and len(xx["abstract"]) > 0]
+            out = [xx for xx in out if xx["abstract"]
+                   and len(xx["abstract"]) > 0]
         elif "answer" in out[0]:
             self.qa_mode = True
             out = [xx for xx in out if xx["answer"] and len(xx["answer"]) > 0]
@@ -77,10 +82,56 @@ class CCSBUAlignDataset(Dataset):
 
     @staticmethod
     def collater(samples):
-        g = Batch.from_data_list([x["graph"] for x in samples])
-        out = {"graph": g, "text_input": [x["text_input"] for x in samples]}
-        if "question" in samples[0]:
-            out["question"] = [x["question"] for x in samples]
+        reac_graphs, reac_idx = [], []
+        prod_graphs, prod_idx = [], []
+        full_rxn = {"reactants": [], 'products': [], 'reagents': []}
+        rxn_wo_reg = {"reactants": [], 'products': [], 'reagents': []}
+        full_rxn_idx, rxn_nreg_idx = [], []
+        text_input, questions = [], []
+
+        for idx, x in enumerate(samples):
+            if x['type'] == 'reactants':
+                reac_graphs.append(x['graph'])
+                reac_idx.append(idx)
+            elif x['type'] == 'products':
+                prod_graphs.append(x['graph'])
+                prod_idx.append(idx)
+            elif x['type'] in ['classification', 'yield']:
+                full_rxn['reactants'].append(x['reactants'])
+                full_rxn['products'].append(x['products'])
+                full_rxn['reagents'].append(x['reagents'])
+                full_rxn_idx.append(idx)
+            elif x['type'] == 'reagents':
+                rxn_wo_reg['reactants'].append(x['reactants'])
+                rxn_wo_reg['products'].append(x['products'])
+                rxn_nreg_idx.append(idx)
+            else:
+                raise NotImplementedError(f'Invalid type {x["type"]}')
+            text_input.append(x['text_input'])
+            if "question" in x:
+                questions.append(x['question'])
+
+        out = {
+            'text_input': text_input, 'graph': {
+                'reactants': Batch.from_data_list(reac_graphs),
+                'reac_idx': reac_idx,
+                'products': Batch.from_data_list(prod_graphs),
+                'prod_idx': prod_idx,
+                'rxn': {
+                    k: Batch.from_data_list(v)
+                    for k, v in full_rxn.items()
+                },
+                'rxn_idx': full_rxn_idx,
+                'reagents': {
+                    k: Batch.from_data_list(v)
+                    for k, v in rxn_wo_reg.items()
+                },
+                'reag_idx': rxn_nreg_idx
+            }
+        }
+        if len(questions) > 0:
+            out['question'] = questions
+
         return out
 
     def __getitem__(self, index):
@@ -101,7 +152,7 @@ class CCSBUAlignDataset(Dataset):
         }
 
     def __getitem__1(self, index):
-        import pudb 
+        import pudb
         pudb.set_trace()
         rec = self.data[index]
         graph = rec["graph"]

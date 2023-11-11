@@ -35,6 +35,17 @@ class AttentionPooling(torch.nn.Module):
             batch_mask[idx, :x.item()] = True
 
         all_feats[batch_mask] = graph_emb
+        # [bs, max_node (dynamic), dim]
+        # [
+        #   reactants,
+        #   rxn
+        # ]
+        # 
+        # [
+        #   [1, node, dim],
+        #   [1, 1, dim]
+        # ]
+        # 
 
         attn_o, attn_w = self.pooler(
             query=self.qry_embedding.repeat(batch_size, 1, 1),
@@ -179,7 +190,7 @@ class RXNGAT(torch.nn.Module):
         # graph pooling
         batch_size = None
         key2emb = {}
-        for key in self.component_keys:
+        for key in self.graph_with_embs:
             this_emb = graph_with_embs[key]['embeddings']
             this_graph = graph_with_embs[key]['graph']
             pooled_emb = self.Attn_pools[key](this_emb, this_graph.batch)
@@ -193,14 +204,14 @@ class RXNGAT(torch.nn.Module):
 
         # graph definition
 
-        node_per_graph = len(self.component_keys) + 1
+        node_per_graph = len(graph_with_embs) + 1
         whole_x = torch.zeros(batch_size * node_per_graph)
         whole_x = whole_x.to(device)
         whole_edge_attr, whole_eidx = [], []
 
         key2idx = {}
 
-        for idx, key in enumerate(self.component_keys):
+        for idx, key in enumerate(graph_with_embs.keys()):
             x_idx = [i * node_per_graph + idx for i in range(batch_size)]
             key2idx[key], whole_x[x_idx] = x_idx, key2emb[key]
 

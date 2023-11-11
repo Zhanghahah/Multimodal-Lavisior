@@ -146,7 +146,8 @@ def convert_uspto(path):
             out.append({
                 "graph": graph,
                 "question": question,
-                "answer": str(answer)
+                "answer": str(answer),
+                'type': data['type']
             })
         elif data['type'] in ['classification', 'yield']:
             reac, reag, prod = data['input'].split('>>')
@@ -155,7 +156,8 @@ def convert_uspto(path):
                 'products': smiles2graph(prod),
                 'reagents': smiles2graph(reag),
                 'question': data['instruction'],
-                'answer': str(data['output'])
+                'answer': str(data['output']),
+                'type': data['type']
             })
         elif data['type'] == 'reagents':
             reac, prod = data['input'].split('>>')
@@ -163,7 +165,8 @@ def convert_uspto(path):
                 'reactants': smiles2graph(reac),
                 'products': smiles2graph(prod),
                 'question': data['instruction'],
-                'answer': str(data['output'])
+                'answer': str(data['output']),
+                "type": data["type"]
             })
         else:
             raise NotImplementedError(f'Invalid type {data["type"]}')
