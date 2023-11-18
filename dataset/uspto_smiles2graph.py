@@ -150,7 +150,7 @@ def convert_uspto(path):
                 'type': data['type']
             })
         elif data['type'] in ['classification', 'yield']:
-            reac, reag, prod = data['input'].split('>>')
+            reac, reag, prod = data['input'].split('>')
             out.append({
                 'reactants': smiles2graph(reac),
                 'products': smiles2graph(prod),
