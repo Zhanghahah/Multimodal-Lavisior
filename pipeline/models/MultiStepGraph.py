@@ -151,6 +151,9 @@ class TrainableDict(torch.nn.Module):
     def __getitem__(self, key):
         return getattr(self, key)
 
+    def forward(self, key):
+        return getattr(self, key)
+
 
 class RXNGAT(torch.nn.Module):
     def __init__(
