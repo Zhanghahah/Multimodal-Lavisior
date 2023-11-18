@@ -568,13 +568,13 @@ class MiniGPT4(BaseModel):
         feat_dims = cfg.get("feat_dims", None)
         prompt_tuning = cfg.get("prompt_tuning", 0)
 
-        graph_dim = cfg.get('graph_dim', 512),
-        rxn_gat_layer = cfg.get('rxn_gat_layer', 2),
-        dropout = cfg.get('dropout', 0.1),
-        negative_slope = cfg.get('negative_slope', 0.2),
-        graph_backbone_dim = cfg.get('graph_backbone_dim', 300),
-        nheads = cfg.get('nheads', 8),
-        share_pool_weight = cfg.get('share_pool_weight', True),
+        graph_dim = cfg.get('graph_dim', 512)
+        rxn_gat_layer = cfg.get('rxn_gat_layer', 2)
+        dropout = cfg.get('dropout', 0.1)
+        negative_slope = cfg.get('negative_slope', 0.2)
+        graph_backbone_dim = cfg.get('graph_backbone_dim', 300)
+        nheads = cfg.get('nheads', 8)
+        share_pool_weight = cfg.get('share_pool_weight', True)
 
         model = cls(
             vit_model=vit_model,
