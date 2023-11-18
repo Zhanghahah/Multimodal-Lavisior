@@ -237,7 +237,7 @@ class RXNGAT(torch.nn.Module):
 
         return torch_geometric.data.Data(**{
             'x': whole_x, 'batch': batch, 'ptr': ptr,
-            'num_nodes': batch_size * node_per_graph
+            'num_nodes': batch_size * node_per_graph,
             'edge_attr': torch.cat(whole_edge_attr, dim=0),
             'edge_index': torch.cat(whole_eidx, dim=0).T
         }), key2idx
