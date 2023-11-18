@@ -139,14 +139,17 @@ class SelfLoopGATConv(MessagePassing):
         )
 
 
-class RandomEmb(torch.nn.Module):
-    def __init__(self, emb_dim):
-        super(RandomEmb, self).__init__()
-        self.para = torch.nn.Parameter(torch.randn(1, emb_dim))
+class TrainableDict(torch.nn.Module):
+    def __init__(self, keys, emb_dim):
+        super(TrainableDict, self).__init__()
+        for x in keys:
+            setattr(self, x, torch.nn.Parameter(torch.randn(1, emb_dim)))
 
-    def forward(self):
-        return self.para
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
 
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class RXNGAT(torch.nn.Module):
@@ -158,17 +161,14 @@ class RXNGAT(torch.nn.Module):
         self.n_layer = n_layer
         self.emb_dim = emb_dim
         self.gnn_dim = gnn_dim
-        self.from_bond_embs = torch.nn.ModuleDict({
-            k: RandomEmb(emb_dim) for k in component_keys
-        })
-        self.to_bond_embs = torch.nn.ModuleDict({
-            k: RandomEmb(emb_dim) for k in component_keys
-        })
+
+        self.from_bond_embs = TrainableDict(component_keys, emb_dim)
+        self.to_bond_embs = TrainableDict(component_keys, emb_dim)
         self.component_keys = component_keys
 
         self.Attn_pools = torch.nn.ModuleDict({
             k: AttentionPooling(
-                output_dim=emb_dim, num_heads=heads, 
+                output_dim=emb_dim, num_heads=heads,
                 dropout=dropout, emb_dim=gnn_dim
             ) for k in component_keys
         })
@@ -222,7 +222,7 @@ class RXNGAT(torch.nn.Module):
             ] for i in range(batch_size)]).to(device))
 
             whole_edge_attr.append(
-                self.from_bond_embs[key]().repeat(batch_size, 1)
+                self.from_bond_embs[key].repeat(batch_size, 1)
             )
 
             whole_eidx.append(torch.LongTensor([[
@@ -231,7 +231,7 @@ class RXNGAT(torch.nn.Module):
             ] for i in range(batch_size)]).to(device))
 
             whole_edge_attr.append(
-                self.to_bond_embs[key]().repeat(batch_size, 1)
+                self.to_bond_embs[key].repeat(batch_size, 1)
             )
 
         # rxns
