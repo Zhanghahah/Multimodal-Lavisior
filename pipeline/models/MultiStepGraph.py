@@ -139,6 +139,16 @@ class SelfLoopGATConv(MessagePassing):
         )
 
 
+class RandomEmb(torch.nn.Module):
+    def __init__(self, emb_dim):
+        super(RandomEmb, self).__init__()
+        self.para = torch.nn.Parameter(torch.randn(1, emb_dim))
+
+    def forward(self):
+        return self.para
+
+
+
 class RXNGAT(torch.nn.Module):
     def __init__(
         self, n_layer, emb_dim, gnn_dim, negative_slope=0.2,
@@ -149,12 +159,10 @@ class RXNGAT(torch.nn.Module):
         self.emb_dim = emb_dim
         self.gnn_dim = gnn_dim
         self.from_bond_embs = torch.nn.ModuleDict({
-            k: torch.nn.Parameter(torch.randn(1, emb_dim))
-            for k in component_keys
+            k: RandomEmb(emb_dim) for k in component_keys
         })
         self.to_bond_embs = torch.nn.ModuleDict({
-            k: torch.nn.Parameter(torch.randn(1, emb_dim))
-            for k in component_keys
+            k: RandomEmb(emb_dim) for k in component_keys
         })
         self.component_keys = component_keys
 
@@ -213,14 +221,18 @@ class RXNGAT(torch.nn.Module):
                 (i + 1) * node_per_graph - 1
             ] for i in range(batch_size)]).to(device))
 
-            whole_edge_attr.append(self.from_bond_embs.repeat(batch_size, 1))
+            whole_edge_attr.append(
+                self.from_bond_embs[key]().repeat(batch_size, 1)
+            )
 
             whole_eidx.append(torch.LongTensor([[
                 (i + 1) * node_per_graph - 1,
                 i * node_per_graph + idx
             ] for i in range(batch_size)]).to(device))
 
-            whole_edge_attr.append(self.to_bond_embs.repeat(batch_size, 1))
+            whole_edge_attr.append(
+                self.to_bond_embs[key]().repeat(batch_size, 1)
+            )
 
         # rxns
 
