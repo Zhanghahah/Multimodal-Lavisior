@@ -299,7 +299,7 @@ class MiniGPT4(BaseModel):
             overall_feat[inputs['reag_idx'], :this_node] = this_feat
             batch_mask[inputs['reag_idx'], :this_node] = this_mask
 
-        return overall_feat, torch.logical_not(batch_mask)
+        return overall_feat, batch_mask
 
     def encode_img(self, inputs, device, do_proj=True):
         """
@@ -313,24 +313,10 @@ class MiniGPT4(BaseModel):
                 self.vit_to_cpu()
                 graph = graph.to("cpu")
 
-            graph_feat = self.gnn(graph).to(device)  # ([11, 300]
-            if not self.use_graph_agg:
-                # torch.Size([1, 11, 300])
-                graph_feat = self.pad_node(graph, graph_feat)
+            graph_feat, batch_mask = self.encode_molecules(graph).to(device)  # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
             inputs["graph_feat"] = feat
-        if "image_mol" in self.encoder_names:
-            image = inputs['image']
-            # image = self.preprocess(image)
-            device = image.device
-            if self.low_resource:
-                self.vit_to_cpu()
-                image = image.to("cpu")
-            feat = self.image_mol.encode_image(image).to(device)
-            feat = feat.unsqueeze(1)
-            inputs["feat"] = feat
-            inputs["image_feat"] = feat
 
         if do_proj:
             inputs_llama, atts_llama = self.proj_feat(inputs, device)

@@ -33,7 +33,7 @@ run:
   weight_decay: 0.03
   max_epoch: 3
   iters_per_epoch: 132720  # 232720
-  batch_size_train: 1
+  batch_size_train: 2
   batch_size_eval: 1
   num_workers: 8
   warmup_steps: 1000
