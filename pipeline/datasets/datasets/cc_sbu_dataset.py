@@ -10,10 +10,7 @@ from torch_geometric.data import Batch
 
 class CCSBUDataset(BaseDataset):
     def __init__(self, vis_processor, text_processor, location):
-        super(CCSBUDataset, self).__init__(
-            vis_processor=vis_processor,
-            text_processor=text_processor
-        )
+        super().__init__(vis_processor=vis_processor, text_processor=text_processor)
 
         self.inner_dataset = wds.DataPipeline(
             wds.ResampledShards(location),
@@ -55,8 +52,7 @@ class CCSBUAlignDataset0(CaptionDataset):
 
 class CCSBUAlignDataset(Dataset):
     def __init__(
-        self, vis_processor=None, text_processor=None,
-        vis_root=None, ann_paths=[]
+        self, vis_processor=None, text_processor=None, vis_root=None, ann_paths=[]
     ):
         """
         vis_root (string): Root directory of data
@@ -69,8 +65,7 @@ class CCSBUAlignDataset(Dataset):
 
         if "abstract" in out[0]:
             self.qa_mode = False
-            out = [xx for xx in out if xx["abstract"]
-                   and len(xx["abstract"]) > 0]
+            out = [xx for xx in out if xx["abstract"] and len(xx["abstract"]) > 0]
         elif "answer" in out[0]:
             self.qa_mode = True
             out = [xx for xx in out if xx["answer"] and len(xx["answer"]) > 0]
