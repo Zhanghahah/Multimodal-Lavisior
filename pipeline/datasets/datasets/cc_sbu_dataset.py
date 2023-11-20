@@ -155,14 +155,11 @@ class CCSBUAlignDataset(Dataset):
     def __getitem__1(self, index):
         import pudb
         pudb.set_trace()
-        rec = self.data[index]
-        graph = rec["graph"]
-        caption = rec["answer"]
-        question = rec["question"]
-
-        return {
-            "graph": graph,
-            "question": question,
-            "text_input": caption,
-            "_id": index,
+        result = {
+            k: v for k, v in self.data[index].items()
+            if k != 'answer'
         }
+        result['_id'] = index
+        result['text_input'] = self.data[index]['answer']
+
+        return result
