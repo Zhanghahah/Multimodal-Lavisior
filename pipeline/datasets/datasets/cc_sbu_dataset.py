@@ -12,7 +12,9 @@ import torch_geometric
 
 class CCSBUDataset(BaseDataset):
     def __init__(self, vis_processor, text_processor, location):
-        super().__init__(vis_processor=vis_processor, text_processor=text_processor)
+        super(CCSBUDataset, self).__init__(
+            vis_processor=vis_processor, text_processor=text_processor
+        )
 
         self.inner_dataset = wds.DataPipeline(
             wds.ResampledShards(location),
@@ -54,7 +56,8 @@ class CCSBUAlignDataset0(CaptionDataset):
 
 class CCSBUAlignDataset(Dataset):
     def __init__(
-        self, vis_processor=None, text_processor=None, vis_root=None, ann_paths=[]
+        self, vis_processor=None, text_processor=None,
+        vis_root=None, ann_paths=[]
     ):
         """
         vis_root (string): Root directory of data
@@ -67,7 +70,8 @@ class CCSBUAlignDataset(Dataset):
 
         if "abstract" in out[0]:
             self.qa_mode = False
-            out = [xx for xx in out if xx["abstract"] and len(xx["abstract"]) > 0]
+            out = [xx for xx in out if xx["abstract"]
+                   and len(xx["abstract"]) > 0]
         elif "answer" in out[0]:
             self.qa_mode = True
             out = [xx for xx in out if xx["answer"] and len(xx["answer"]) > 0]
@@ -84,7 +88,7 @@ class CCSBUAlignDataset(Dataset):
         full_rxn = {"reactants": [], 'products': [], 'reagents': []}
         rxn_wo_reg = {"reactants": [], 'products': []}
         full_rxn_idx, rxn_nreg_idx = [], []
-        text_input, questions = [], []
+        text_input, questions, o_types = [], [], []
 
         for idx, x in enumerate(samples):
             if x['type'] == 'reactants':
@@ -107,6 +111,7 @@ class CCSBUAlignDataset(Dataset):
             text_input.append(x['text_input'])
             if "question" in x:
                 questions.append(x['question'])
+            o_types.append(x['type'])
 
         t_graph = {
             'reac_idx': reac_idx, 'prod_idx': prod_idx,
@@ -127,7 +132,7 @@ class CCSBUAlignDataset(Dataset):
                 k: convert_graph_to_Data(v)
                 for k, v in rxn_wo_reg.items()
             }
-        out = {'text_input': text_input, 'graph': t_graph}
+        out = {'text_input': text_input, 'graph': t_graph, 'types': o_types}
         if len(questions) > 0:
             out['question'] = questions
 
@@ -171,7 +176,7 @@ class CCSBUAlignDataset(Dataset):
 def convert_graph_to_Data(data_batch):
     batch_size, max_node = len(data_batch), 0
     edge_idxes, edge_feats, node_feats, lstnode = [], [], [], 0
-    batch, ptr, node_per_graph =  [], [0], []
+    batch, ptr, node_per_graph = [], [0], []
     for idx, graph in enumerate(data_batch):
         num_nodes = graph['num_nodes']
         num_edges = graph['edge_index'].shape[1]
