@@ -5,7 +5,6 @@ from pipeline.datasets.datasets.base_dataset import BaseDataset
 from pipeline.datasets.datasets.caption_datasets import CaptionDataset
 import pickle
 from torch.utils.data import Dataset
-from torch_geometric.data import Batch
 
 
 class CCSBUDataset(BaseDataset):
