@@ -1,1 +1,1 @@
-CUDA_LAUNCH_BLOCKING=1 torchrun --nproc_per_node 8 --master_port 34901 train.py --cfg-path train_configs/drugchat_stage2_finetune.yaml
+CUDA_LAUNCH_BLOCKING=1 torchrun --nproc_per_node 2 --master_port 34901 train.py --cfg-path train_configs/drugchat_stage2_finetune.yaml
