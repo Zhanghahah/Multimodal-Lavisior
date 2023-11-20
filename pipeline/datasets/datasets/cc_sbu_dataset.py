@@ -8,7 +8,6 @@ import pickle
 from torch.utils.data import Dataset
 import torch
 import torch_geometric
-from torch_geometric.data import Batch
 
 
 class CCSBUDataset(BaseDataset):

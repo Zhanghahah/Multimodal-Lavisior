@@ -34,22 +34,12 @@ class StoppingCriteriaSub(StoppingCriteria):
         return False
 
 
-def collate_feat_batch(x, batch):
-    batch_size = batch.max().item() + 1
-    n_nodes = torch.zeros(batch_size).to(batch)
-    n_nodes.index_add_(torch.ones_like(batch), index=batch, dim=0)
-    max_node = n_nodes.max().item() + 1
-
+def collate_feat_batch(x, batch_mask):
+    batch_size, max_node = batch_mask.shape
     overall_feat = torch.zeros(batch_size, max_node, x.shape[-1])
     overall_feat = overall_feat.to(x)
-
-    batch_mask = torch.zeros(batch_size, max_node).bool()
-    batch_mask = batch_mask.to(x.device)
-    for idx, p in enumerate(batch):
-        batch_mask[idx, :p.item()] = True
-
     overall_feat[batch_mask] = x
-    return overall_feat, batch_mask
+    return overall_feat
 
 
 @registry.register_model("mini_gpt4")
@@ -248,18 +238,19 @@ class MiniGPT4(BaseModel):
                 if self.use_graph_agg:
                     if self.share_pool_weight:
                         batched_result = self.rxn_gat.Attn_pools[k](
-                            graph_emb=node_feat, batch=graph.batch
+                            graph_emb=node_feat, batch=v['graph'].batch
                         ).unsqueeze(dim=1)
                     else:
                         batched_result = self.pooler[k](
-                            graph_emb=node_feat, batch=graph.batch
+                            graph_emb=node_feat, batch=v['graph'].batch
                         ).unsqueeze(dim=1)
                     batch_mask = torch.ones(batched_result.shape[0], 1)
                     batch_mask = batch_mask.bool().to(device)
                 else:
-                    batched_result, batch_mask = collate_feat_batch(
-                        x=node_feat, batch=graph.batch
+                    batched_result = collate_feat_batch(
+                        x=node_feat, batch_mask=v['graph'].batch_mask
                     ).unsqueeze(dim=1)
+                    batch_mask = v['graph'].batch_mask
                     if self.g_align_proj is not None:
                         batched_result = self.g_align_proj(batched_result)
 
@@ -613,6 +604,3 @@ class MiniGPT4(BaseModel):
             print("Loaded checkpoint from {}: {}".format(ckpt_path, msg))
 
         return model
-
-
-
