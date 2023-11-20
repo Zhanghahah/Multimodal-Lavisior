@@ -112,17 +112,17 @@ class CCSBUAlignDataset(Dataset):
             'batch_size': len(samples)
         }
         if len(reac_idx) > 0:
-            t_graph['reactants'] = Batch.from_data_list(reac_graphs)
+            t_graph['reactants'] = convert_graph_to_Data(reac_graphs)
         if len(prod_idx) > 0:
-            t_graph['products'] = Batch.from_data_list(prod_graphs)
+            t_graph['products'] = convert_graph_to_Data(prod_graphs)
         if len(full_rxn_idx) > 0:
             t_graph['rxn'] = {
-                k: Batch.from_data_list(v)
+                k: convert_graph_to_Data(v)
                 for k, v in full_rxn.items()
             }
         if len(rxn_nreg_idx) > 0:
             t_graph['reagents'] = {
-                k: Batch.from_data_list(v)
+                k: convert_graph_to_Data(v)
                 for k, v in rxn_wo_reg.items()
             }
         out = {'text_input': text_input, 'graph': t_graph}
@@ -166,3 +166,39 @@ class CCSBUAlignDataset(Dataset):
         result['text_input'] = self.data[index]['answer']
 
         return result
+
+
+def convert_graph_to_Data(data_batch):
+    batch_size, max_node = len(data_batch), 0
+    edge_idxes, edge_feats, node_feats, lstnode = [], [], [], 0
+    batch, ptr, node_per_graph =  [], [0], []
+    for idx, graph in enumerate(data_batch):
+        num_nodes = graph['num_nodes']
+        num_edges = graph['edge_index'].shape[1]
+
+        edge_idxes.append(graph['edge_index'] + lstnode)
+        edge_feats.append(graph['edge_feat'])
+        node_feats.append(graph['node_feat'])
+
+        lstnode += num_nodes
+        max_node = max(max_node, num_nodes)
+        node_per_graph.append(num_nodes)
+        batch.append(np.ones(num_nodes, dtype=np.int64) * idx)
+        ptr.append(lstnode)
+
+    result = {
+        'edge_index': np.concatenate(edge_idxes, axis=-1),
+        'edge_attr': np.concatenate(edge_feats, axis=0),
+        'batch': np.concatenate(batch, axis=0),
+        'x': np.concatenate(node_feats, axis=0),
+        'ptr': np.array(ptr, dtype=np.int64)
+    }
+
+    result = {k: torch.from_numpy(v) for k, v in result.items()}
+    result['num_nodes'] = lstnode
+    all_batch_mask = torch.zeros((batch_size, max_node))
+    for idx, mk in enumerate(node_per_graph):
+        all_batch_mask[idx, :mk] = 1
+    result['batch_mask'] = all_batch_mask.bool()
+
+    return torch_geometric.data.Data(**result)
