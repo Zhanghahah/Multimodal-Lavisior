@@ -111,25 +111,26 @@ class CCSBUAlignDataset(Dataset):
             if "question" in x:
                 questions.append(x['question'])
 
-        out = {
-            'text_input': text_input, 'graph': {
-                'reactants': Batch.from_data_list(reac_graphs),
-                'reac_idx': reac_idx,
-                'products': Batch.from_data_list(prod_graphs),
-                'prod_idx': prod_idx,
-                'rxn': {
-                    k: Batch.from_data_list(v)
-                    for k, v in full_rxn.items()
-                },
-                'rxn_idx': full_rxn_idx,
-                'reagents': {
-                    k: Batch.from_data_list(v)
-                    for k, v in rxn_wo_reg.items()
-                },
-                'reag_idx': rxn_nreg_idx,
-                'batch_size': len(samples)
-            }
+        t_graph = {
+            'reac_idx': reac_idx, 'prod_idx': prod_idx,
+            'rxn_idx': full_rxn_idx, 'reag_idx': rxn_nreg_idx,
+            'batch_size': len(samples)
         }
+        if len(reac_idx) > 0:
+            t_graph['reactants'] = Batch.from_data_list(reac_graphs)
+        if len(prod_idx) > 0:
+            t_graph['products'] = Batch.from_data_list(prod_graphs)
+        if len(full_rxn_idx) > 0:
+            t_graph['rxn'] = {
+                k: Batch.from_data_list(v)
+                for k, v in full_rxn.items()
+            }
+        if len(rxn_nreg_idx) > 0:
+            t_graph['reagents'] = {
+                k: Batch.from_data_list(v)
+                for k, v in rxn_wo_reg.items()
+            }
+        out = {'text_input': text_input, 'graph': t_graph}
         if len(questions) > 0:
             out['question'] = questions
 
