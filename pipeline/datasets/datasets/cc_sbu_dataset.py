@@ -156,8 +156,6 @@ class CCSBUAlignDataset(Dataset):
         return result
 
     def __getitem__1(self, index):
-        import pudb
-        pudb.set_trace()
         result = {
             k: v for k, v in self.data[index].items()
             if k != 'answer'
