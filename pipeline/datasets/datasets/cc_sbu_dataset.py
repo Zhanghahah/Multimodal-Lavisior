@@ -142,15 +142,22 @@ class CCSBUAlignDataset(Dataset):
             return self.__getitem__1(index)
 
     def __getitem__0(self, index):
-        rec = self.data[index]
-        graph = rec["graph"]
-        caption = rec["abstract"]
+        # rec = self.data[index]
+        # graph = rec["graph"]
+        # caption = rec["abstract"]
 
-        return {
-            "graph": graph,
-            "text_input": caption,
-            "_id": index,
+        # return {
+        #     "graph": graph,
+        #     "text_input": caption,
+        #     "_id": index,
+        # }
+        result = {
+            k: v for k, v in self.data[index].items()
+            if k != 'abstract'
         }
+        result['_id'] = index
+        result['text_input'] = self.data[index]['abstract']
+        return result
 
     def __getitem__1(self, index):
         import pudb
