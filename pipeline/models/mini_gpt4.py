@@ -398,10 +398,18 @@ class MiniGPT4(BaseModel):
         else:
             return img_embeds, atts_img
 
+    def get_device_from_graph(self, graph):
+        for idx, key in enumerate(['reactants', 'products', 'rxn', 'reagents']):
+            if key in graph and idx < 2:
+                return graph[key].x.device
+            elif key in graph:
+                return graph[key]['reactants'].x.device
+        raise ValueError('A batch any graph is passed')
+
     def forward(self, samples):
         if "gnn" in self.encoder_names:
-            inputs = samples["graph"]
-            device = inputs.x.device
+            inputs = samples['graph']
+            device = self.get_device_from_graph(inputs)
         if "image_mol" in self.encoder_names:
             inputs = samples["image"]
             device = inputs.device
@@ -410,7 +418,7 @@ class MiniGPT4(BaseModel):
             device = list(v for v in samples.values()
                           if isinstance(v, torch.Tensor))[0].device
 
-        img_embeds, atts_img = self.encode_img(samples, device)
+        img_embeds, atts_img = self.encode_img(inputs, device)
 
         assert 'question' in samples
         if 'question' in samples:
