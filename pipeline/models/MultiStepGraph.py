@@ -139,22 +139,6 @@ class SelfLoopGATConv(MessagePassing):
         )
 
 
-class TrainableDict(torch.nn.Module):
-    def __init__(self, keys, emb_dim):
-        super(TrainableDict, self).__init__()
-        for x in keys:
-            setattr(self, x, torch.nn.Parameter(torch.randn(1, emb_dim)))
-
-    def __setitem__(self, key, value):
-        setattr(self, key, value)
-
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def forward(self, key):
-        return getattr(self, key)
-
-
 class RXNGAT(torch.nn.Module):
     def __init__(
         self, n_layer, emb_dim, gnn_dim, negative_slope=0.2,
@@ -165,8 +149,14 @@ class RXNGAT(torch.nn.Module):
         self.emb_dim = emb_dim
         self.gnn_dim = gnn_dim
 
-        self.from_bond_embs = TrainableDict(component_keys, emb_dim)
-        self.to_bond_embs = TrainableDict(component_keys, emb_dim)
+        self.from_bond_embs = torch.nn.ParameterDict({
+            k: torch.nn.Parameter(torch.randn(1, emb_dim))
+            for k in component_keys
+        })
+        self.to_bond_embs = torch.nn.ParameterDict({
+            k: torch.nn.Parameter(torch.randn(1, emb_dim))
+            for k in component_keys
+        })
         self.component_keys = component_keys
 
         self.Attn_pools = torch.nn.ModuleDict({
