@@ -301,19 +301,15 @@ class MiniGPT4(BaseModel):
 
         return overall_feat, batch_mask
 
-    def encode_img(self, inputs, device, do_proj=True):
+    def forward_encoder(self, inputs, device, do_proj=True):
         """
         Args:
             inputs (dict)
         """
+        import pudb
+        pudb.set_trace()
         if "gnn" in self.encoder_names:
-            graph = inputs['graph']
-            device = graph.x.device
-            if self.low_resource:
-                self.vit_to_cpu()
-                graph = graph.to("cpu")
-
-            graph_feat, batch_mask = self.encode_molecules(graph).to(device)  # ([1, 11, 512])
+            graph_feat, batch_mask = self.encode_molecules(inputs)  # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
             inputs["graph_feat"] = feat
@@ -418,7 +414,7 @@ class MiniGPT4(BaseModel):
             device = list(v for v in samples.values()
                           if isinstance(v, torch.Tensor))[0].device
 
-        img_embeds, atts_img = self.encode_img(inputs, device)
+        img_embeds, atts_img = self.forwar_encoder(inputs, device)
 
         assert 'question' in samples
         if 'question' in samples:

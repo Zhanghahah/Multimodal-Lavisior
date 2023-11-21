@@ -13,7 +13,7 @@ model:
   num_query_token: 32
 
   # Vicuna
-  llama_model: "/data/zhangyu/own_data/public_models/Llama-2-7b-hf"
+  llama_model: "/home/zhangyu/public_models/Llama-2-7b-hf"
 #  llama_model: "/home/zhangyu/DeepSpeedExamples/applications/DeepSpeed-Chat/training/step1_supervised_finetuning/08-16-output_step1_llama2_7b"
 
   # generation configs
