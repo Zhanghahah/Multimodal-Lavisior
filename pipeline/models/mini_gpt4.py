@@ -254,7 +254,7 @@ class MiniGPT4(BaseModel):
                     if self.g_align_proj is not None:
                         batched_result = self.g_align_proj(batched_result)
 
-            else:
+            elif k in ['rxn', 'reagents']:
                 gat_kwargs = {
                     a: {'graph': b, 'embeddings': self.gnn(b)}
                     for a, b in v.items()
