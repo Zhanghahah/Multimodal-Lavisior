@@ -311,7 +311,7 @@ class MiniGPT4(BaseModel):
         import pudb
         pudb.set_trace()
         if "gnn" in self.encoder_names:
-            graph_feat, batch_mask = self.encode_molecules(inputs)  # ([1, 11, 512])
+            graph_feat, batch_mask = self.encode_molecules(inputs, device)  # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
             inputs["graph_feat"] = feat
@@ -416,7 +416,7 @@ class MiniGPT4(BaseModel):
             device = list(v for v in samples.values()
                           if isinstance(v, torch.Tensor))[0].device
 
-        img_embeds, atts_img = self.forwar_encoder(inputs, device)
+        img_embeds, atts_img = self.forward_encoder(inputs, device)
 
         assert 'question' in samples
         if 'question' in samples:
