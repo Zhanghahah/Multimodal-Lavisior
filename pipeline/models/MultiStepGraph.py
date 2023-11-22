@@ -190,7 +190,7 @@ class RXNGAT(torch.nn.Module):
         # graph definition
 
         node_per_graph = len(graph_with_embs) + 1
-        whole_x = torch.zeros(batch_size * node_per_graph)
+        whole_x = torch.zeros(batch_size * node_per_graph, self.emb_dim)
         whole_x = whole_x.to(device)
         whole_edge_attr, whole_eidx = [], []
 
