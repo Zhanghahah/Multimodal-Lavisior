@@ -78,7 +78,7 @@ class MiniGPT4(BaseModel):
         feat_dims=None,
         prompt_tuning=0,
         graph_dim=512,
-        rxn_gat_layer=2,
+        rxn_gat_layer=3,
         dropout=0.1,
         negative_slope=0.2,
         graph_backbone_dim=300,
