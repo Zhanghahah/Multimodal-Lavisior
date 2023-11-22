@@ -92,6 +92,7 @@ class MiniGPT4(BaseModel):
         self.encoder_names = encoder_names
 
         self.feat_dims = feat_dims
+        self.graph_dim = graph_dim
         if "gnn" in self.encoder_names:
             self.use_graph_agg = use_graph_agg
             self.share_pool_weight = share_pool_weight
@@ -118,7 +119,6 @@ class MiniGPT4(BaseModel):
                 )
             else:
                 self.g_align_proj = None
-            self.graph_dim = graph_dim
             self.graph_backbone_dim = graph_backbone_dim
 
         if "image_mol" in self.encoder_names:
@@ -159,7 +159,7 @@ class MiniGPT4(BaseModel):
                 )
         else:
             self.llama_proj = nn.Linear(
-                self.encoder_out_dim, self.llama_model.config.hidden_size
+                self.graph_dim, self.llama_model.config.hidden_size
             )
 
         if prompt_tuning:
@@ -190,7 +190,7 @@ class MiniGPT4(BaseModel):
         print(f"use_graph_agg={self.use_graph_agg}")
         self.gnn = GNN(num_layer=5, emb_dim=300, gnn_type='gcn')
         self.gnn.load_from_pretrained(url_or_filename=model_path)
-        self.encoder_out_dim = self.gnn.out_dim
+        # self.encoder_out_dim = self.gnn.out_dim
 
         if freeze:
             for name, param in self.gnn.named_parameters():
@@ -251,8 +251,9 @@ class MiniGPT4(BaseModel):
                 else:
                     batched_result = collate_feat_batch(
                         x=node_feat, batch_mask=v.batch_mask
-                    ).unsqueeze(dim=1)
-                    batch_mask = v.batch_mask
+                    ).unsqueeze(dim=1) # [1, 1, 512]
+                    batch_mask = v.batch_mask # [1, 1]
+
                     if self.g_align_proj is not None:
                         batched_result = self.g_align_proj(batched_result)
 
@@ -272,6 +273,8 @@ class MiniGPT4(BaseModel):
         max_node = max(v['feat'].shape[1] for v in key2result.values())
         batch_size = inputs['batch_size']
         batch_mask = torch.zeros(batch_size, max_node).bool().to(device)
+        import pudb
+        pudb.set_trace()
         overall_feat = torch.zeros(batch_size, max_node, self.graph_dim)
         overall_feat = overall_feat.to(device)
 
@@ -310,8 +313,6 @@ class MiniGPT4(BaseModel):
         Args:
             inputs (dict)
         """
-        import pudb
-        pudb.set_trace()
         if "gnn" in self.encoder_names:
             graph_feat, batch_mask = self.encode_molecules(inputs, device)  # ([1, 11, 512])
             feat = graph_feat
