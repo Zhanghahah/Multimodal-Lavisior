@@ -184,9 +184,8 @@ class RXNGAT(torch.nn.Module):
         # graph pooling
         batch_size = None
         key2emb = {}
-        for key in self.graph_with_embs:
-            this_emb = graph_with_embs[key]['embeddings']
-            this_graph = graph_with_embs[key]['graph']
+        for key, val in graph_with_embs.items():
+            this_emb, this_graph = val['embeddings'], val['graph']
             pooled_emb = self.Attn_pools[key](this_emb, this_graph.batch)
             key2emb[key] = pooled_emb
             if batch_size is None:
@@ -209,23 +208,21 @@ class RXNGAT(torch.nn.Module):
             x_idx = [i * node_per_graph + idx for i in range(batch_size)]
             key2idx[key], whole_x[x_idx] = x_idx, key2emb[key]
 
-            whole_eidx.append(torch.LongTensor([[
-                i * node_per_graph + idx,
-                (i + 1) * node_per_graph - 1
-            ] for i in range(batch_size)]).to(device))
+            from_emb = self.from_bond_embs[key].repeat(batch_size, 1)
+            to_emb = self.to_bond_embs[key].repeat(batch_size, 1)
+            from_edges = [
+                [i * node_per_graph + idx, (i + 1) * node_per_graph - 1]
+                for i in range(batch_size)
+            ]
+            to_edges = [
+                [(i + 1) * node_per_graph - 1, i * node_per_graph + idx]
+                for i in range(batch_size)
+            ]
 
-            whole_edge_attr.append(
-                self.from_bond_embs[key].repeat(batch_size, 1)
-            )
-
-            whole_eidx.append(torch.LongTensor([[
-                (i + 1) * node_per_graph - 1,
-                i * node_per_graph + idx
-            ] for i in range(batch_size)]).to(device))
-
-            whole_edge_attr.append(
-                self.to_bond_embs[key].repeat(batch_size, 1)
-            )
+            whole_eidx.extend(from_edges)
+            whole_edge_attr.append(from_emb)
+            whole_eidx.extend(to_edges)
+            whole_edge_attr.append(to_emb)
 
         # rxns
 
@@ -244,7 +241,7 @@ class RXNGAT(torch.nn.Module):
             'x': whole_x, 'batch': batch, 'ptr': ptr,
             'num_nodes': batch_size * node_per_graph,
             'edge_attr': torch.cat(whole_edge_attr, dim=0),
-            'edge_index': torch.cat(whole_eidx, dim=0).T
+            'edge_index': torch.LongTensor(whole_eidx).to(device).T
         }), key2idx
 
     def forward(self, graph_with_embs):
