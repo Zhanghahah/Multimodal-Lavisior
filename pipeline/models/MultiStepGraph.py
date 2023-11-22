@@ -227,7 +227,7 @@ class RXNGAT(torch.nn.Module):
             ptr.append((i + 1) * node_per_graph)
 
         batch = torch.LongTensor(batch).to(device)
-        prt = torch.LongTensor(ptr).to(device)
+        ptr = torch.LongTensor(ptr).to(device)
 
         return torch_geometric.data.Data(**{
             'x': whole_x, 'batch': batch, 'ptr': ptr,
