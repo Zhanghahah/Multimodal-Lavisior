@@ -118,6 +118,8 @@ class MiniGPT4(BaseModel):
                 )
             else:
                 self.g_align_proj = None
+            self.graph_dim = graph_dim
+            self.graph_backbone_dim = graph_backbone_dim
 
         if "image_mol" in self.encoder_names:
             self.create_image_mol(encoder_ckpt, freeze_qformer)
@@ -234,23 +236,23 @@ class MiniGPT4(BaseModel):
         key2result = {}
         for k, v in inputs.items():
             if k in ['reactants', 'products']:
-                node_feat = self.gnn(v['graph'])
+                node_feat = self.gnn(v)
                 if self.use_graph_agg:
                     if self.share_pool_weight:
                         batched_result = self.rxn_gat.Attn_pools[k](
-                            node_feat, v['graph'].batch_mask
+                            graph_emb=node_feat, batch_mask=v.batch_mask
                         ).unsqueeze(dim=1)
                     else:
                         batched_result = self.pooler[k](
-                            node_feat, v['graph'].batch_mask
+                            graph_emb=node_feat, batch_mask=v.batch_mask
                         ).unsqueeze(dim=1)
                     batch_mask = torch.ones(batched_result.shape[0], 1)
                     batch_mask = batch_mask.bool().to(device)
                 else:
                     batched_result = collate_feat_batch(
-                        x=node_feat, batch_mask=v['graph'].batch_mask
+                        x=node_feat, batch_mask=v.batch_mask
                     ).unsqueeze(dim=1)
-                    batch_mask = v['graph'].batch_mask
+                    batch_mask = v.batch_mask
                     if self.g_align_proj is not None:
                         batched_result = self.g_align_proj(batched_result)
 
