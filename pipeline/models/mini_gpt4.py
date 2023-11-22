@@ -314,8 +314,8 @@ class MiniGPT4(BaseModel):
             inputs (dict)
         """
         if "gnn" in self.encoder_names:
-            graph_feat, batch_mask = self.encode_molecules(
-                inputs, device)  # ([1, 11, 512])
+            graph_feat, batch_mask = self.encode_molecules(inputs, device)
+            # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
             inputs["graph_feat"] = feat
