@@ -251,8 +251,8 @@ class MiniGPT4(BaseModel):
                 else:
                     batched_result = collate_feat_batch(
                         x=node_feat, batch_mask=v.batch_mask
-                    ).unsqueeze(dim=1) # [1, 1, 512]
-                    batch_mask = v.batch_mask # [1, 1]
+                    )
+                    batch_mask = v.batch_mask  # [1, 1]
 
                     if self.g_align_proj is not None:
                         batched_result = self.g_align_proj(batched_result)
@@ -314,7 +314,8 @@ class MiniGPT4(BaseModel):
             inputs (dict)
         """
         if "gnn" in self.encoder_names:
-            graph_feat, batch_mask = self.encode_molecules(inputs, device)  # ([1, 11, 512])
+            graph_feat, batch_mask = self.encode_molecules(
+                inputs, device)  # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
             inputs["graph_feat"] = feat
