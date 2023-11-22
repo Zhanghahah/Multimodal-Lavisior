@@ -176,8 +176,11 @@ class RXNGAT(torch.nn.Module):
         # graph pooling
         batch_size = None
         key2emb = {}
+        import pudb
+        pudb.set_trace()
         for key, val in graph_with_embs.items():
             this_emb, this_graph = val['embeddings'], val['graph']
+            print(f"gnn dtype is {this_emb.dtype}")
             pooled_emb = self.Attn_pools[key](this_emb, this_graph.batch_mask)
             key2emb[key] = pooled_emb
             if batch_size is None:
