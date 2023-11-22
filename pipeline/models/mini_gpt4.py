@@ -238,11 +238,11 @@ class MiniGPT4(BaseModel):
                 if self.use_graph_agg:
                     if self.share_pool_weight:
                         batched_result = self.rxn_gat.Attn_pools[k](
-                            graph_emb=node_feat, batch=v['graph'].batch
+                            node_feat, v['graph'].batch_mask
                         ).unsqueeze(dim=1)
                     else:
                         batched_result = self.pooler[k](
-                            graph_emb=node_feat, batch=v['graph'].batch
+                            node_feat, v['graph'].batch_mask
                         ).unsqueeze(dim=1)
                     batch_mask = torch.ones(batched_result.shape[0], 1)
                     batch_mask = batch_mask.bool().to(device)

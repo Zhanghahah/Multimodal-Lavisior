@@ -21,24 +21,16 @@ class AttentionPooling(torch.nn.Module):
         self.output_dim = output_dim
         self.emb_dim = output_dim if emb_dim is None else emb_dim
 
-    def forward(self, graph_emb, batch):
-        batch_size = batch.max().item() + 1
-        n_nodes = torch.zeros(batch_size).to(batch)
-        n_nodes.index_add_(torch.ones_like(batch), index=batch, dim=0)
-        max_node = n_nodes.max().item() + 1
-
-        device = graph_emb.device
-        batch_mask = torch.zeros(batch_size, max_node).bool().to(device)
-        all_feats = torch.zeros(batch_size, max_node, self.emb_dim).to(device)
-
-        for idx, x in enumerate(n_nodes):
-            batch_mask[idx, :x.item()] = True
-
+    def forward(self, graph_emb, batch_mask):
+        batch_size, max_node = batch_mask.shape
+        all_feats = torch.zeros(batch_size, max_node, self.emb_dim)
+        all_feats = all_feats.to(graph_emb)
         all_feats[batch_mask] = graph_emb
 
         attn_o, attn_w = self.pooler(
             query=self.qry_embedding.repeat(batch_size, 1, 1),
-            key=all_feats, value=all_feats, key_padding_mask=~batch_mask
+            key=all_feats, value=all_feats,
+            key_padding_mask=torch.logical_not(batch_mask)
         )
         return attn_o.squeeze(dim=1)
 
@@ -186,7 +178,7 @@ class RXNGAT(torch.nn.Module):
         key2emb = {}
         for key, val in graph_with_embs.items():
             this_emb, this_graph = val['embeddings'], val['graph']
-            pooled_emb = self.Attn_pools[key](this_emb, this_graph.batch)
+            pooled_emb = self.Attn_pools[key](this_emb, this_graph.batch_mask)
             key2emb[key] = pooled_emb
             if batch_size is None:
                 batch_size = pooled_emb.shape[0]
