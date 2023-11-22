@@ -263,6 +263,8 @@ class MiniGPT4(BaseModel):
                 batched_result = rxn_embs['rxn'].unsqueeze(dim=1)
                 batch_mask = torch.ones(batched_result.shape[0], 1)
                 batch_mask = batch_mask.bool().to(device)
+            else:
+                continue
             key2result[k] = {'feat': batched_result, 'batch_mask': batch_mask}
 
         max_node = max(v['feat'].shape[1] for v in key2result.values())
