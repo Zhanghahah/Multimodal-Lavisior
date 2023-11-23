@@ -312,10 +312,10 @@ class MiniGPT4(BaseModel):
             # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
-            inputs["graph_feat"] = feat
+            inputs["graph_feat"] = feat # [2, 36, 512]
 
         if do_proj:
-            inputs_llama, atts_llama = self.proj_feat(inputs, device)
+            inputs_llama, atts_llama = self.proj_feat(inputs, device) # inputs_llama: [2, 36, 4096]; atts_llama: [2, 36]
             return inputs_llama, atts_llama
         return inputs
 
@@ -376,7 +376,7 @@ class MiniGPT4(BaseModel):
                 p_before, padding="longest", return_tensors="pt", add_special_tokens=False).to(img_embeds.device)
             p_after_tokens = self.llama_tokenizer(
                 p_after, padding="longest", return_tensors="pt", add_special_tokens=False).to(img_embeds.device)
-            # .expand(batch_size, -1, -1) torch.Size([1, 8, 4096])
+            # .expand(batch_size, -1, -1) torch.Size([bs, 8, 4096])
             p_before_embeds = self.llama_model.model.embed_tokens(
                 p_before_tokens.input_ids)
             # .expand(batch_size, -1, -1)   torch.Size([1, 15, 4096])
@@ -386,10 +386,10 @@ class MiniGPT4(BaseModel):
                 img_embeds = torch.cat(
                     [img_embeds, self.soft_prompt.expand(batch_size, -1, -1)], 1)
             wrapped_img_embeds = torch.cat(
-                [p_before_embeds, img_embeds, p_after_embeds], dim=1)  # torch.Size([1, 34, 4096])
+                [p_before_embeds, img_embeds, p_after_embeds], dim=1)  # torch.Size([2, 308, 4096])
             # wrapped_atts_img 1,34
             wrapped_atts_img = atts_img[:,
-                                        :1].expand(-1, wrapped_img_embeds.shape[1])
+                                        :1].expand(-1, wrapped_img_embeds.shape[1]) # [2, 308]
             return wrapped_img_embeds, wrapped_atts_img
         else:
             return img_embeds, atts_img
@@ -413,7 +413,7 @@ class MiniGPT4(BaseModel):
             # no encoder
             device = list(v for v in samples.values()
                           if isinstance(v, torch.Tensor))[0].device
-
+        # img_embeds: [2, 36, 4096]; atts_img: [2, 36]
         img_embeds, atts_img = self.forward_encoder(inputs, device)
 
         assert 'question' in samples
