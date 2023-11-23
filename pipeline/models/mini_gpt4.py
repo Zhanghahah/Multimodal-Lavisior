@@ -285,19 +285,19 @@ class MiniGPT4(BaseModel):
 
         update_result(
             result=overall_result, idxes=inputs['reac_idx'],
-            vx=key2result['reactants'], key='product', mode='single'
+            vx=key2result.get('reactants', None), key='product', mode='single'
         )
         update_result(
             result=overall_result, idxes=inputs['prod_idx'],
-            vx=key2result['products'], key='reactants', mode='single'
+            vx=key2result.get('products', None), key='reactants', mode='single'
         )
         update_result(
             result=overall_result, idxes=inputs['rxn_idx'],
-            vx=key2result['rxn'], mode='multiple'
+            vx=key2result.get('rxn', None), mode='multiple'
         )
         update_result(
             result=overall_result, idxes=inputs['reag_idx'],
-            vx=key2result['reagents'], mode='multiple'
+            vx=key2result.get('reagents', None), mode='multiple'
         )
 
         return overall_result
@@ -312,10 +312,11 @@ class MiniGPT4(BaseModel):
             # ([1, 11, 512])
             feat = graph_feat
             inputs["feat"] = feat
-            inputs["graph_feat"] = feat # [2, 36, 512]
+            inputs["graph_feat"] = feat  # [2, 36, 512]
 
         if do_proj:
-            inputs_llama, atts_llama = self.proj_feat(inputs, device) # inputs_llama: [2, 36, 4096]; atts_llama: [2, 36]
+            # inputs_llama: [2, 36, 4096]; atts_llama: [2, 36]
+            inputs_llama, atts_llama = self.proj_feat(inputs, device)
             return inputs_llama, atts_llama
         return inputs
 
@@ -389,7 +390,7 @@ class MiniGPT4(BaseModel):
                 [p_before_embeds, img_embeds, p_after_embeds], dim=1)  # torch.Size([2, 308, 4096])
             # wrapped_atts_img 1,34
             wrapped_atts_img = atts_img[:,
-                                        :1].expand(-1, wrapped_img_embeds.shape[1]) # [2, 308]
+                                        :1].expand(-1, wrapped_img_embeds.shape[1])  # [2, 308]
             return wrapped_img_embeds, wrapped_atts_img
         else:
             return img_embeds, atts_img
