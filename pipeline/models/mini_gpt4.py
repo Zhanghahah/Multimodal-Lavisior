@@ -233,6 +233,19 @@ class MiniGPT4(BaseModel):
             self.image_mol.float()
 
     def encode_molecules(self, inputs, device):
+        def update_result(result, idxes, vx, key=None, mode='single'):
+            if mode == 'single' and key is None:
+                raise NotImplementedError('single mode require keys specified')
+            for idx, edx in enumerate(idxes):
+                if mode == 'single':
+                    result[edx] = {key: vx['feat'][idx][vs['batch_mask'][idx]]}
+                elif mode == 'multiple':
+                    result[edx] = {
+                        k: v[idx].unsqueeze(dim=0) for k, v in vx.items()
+                    }
+                else:
+                    raise NotImplementedError(f'Invalid Mode {mode}')
+
         key2result = {}
         for k, v in inputs.items():
             if k in ['reactants', 'products']:
@@ -256,57 +269,38 @@ class MiniGPT4(BaseModel):
 
                     if self.g_align_proj is not None:
                         batched_result = self.g_align_proj(batched_result)
-
+                key2result[k] = {'feat': batched_result,
+                                 'batch_mask': batch_mask}
             elif k in ['rxn', 'reagents']:
                 gat_kwargs = {
                     a: {'graph': b, 'embeddings': self.gnn(b)}
                     for a, b in v.items()
                 }
-                rxn_embs = self.rxn_gat(gat_kwargs)
-                batched_result = rxn_embs['rxn'].unsqueeze(dim=1)
-                batch_mask = torch.ones(batched_result.shape[0], 1)
-                batch_mask = batch_mask.bool().to(device)
+                key2result[k] = self.rxn_gat(gat_kwargs)
             else:
                 continue
-            key2result[k] = {'feat': batched_result, 'batch_mask': batch_mask}
 
-        max_node = max(v['feat'].shape[1] for v in key2result.values())
         batch_size = inputs['batch_size']
-        batch_mask = torch.zeros(batch_size, max_node).bool().to(device)
-        import pudb
-        pudb.set_trace()
-        overall_feat = torch.zeros(batch_size, max_node, self.graph_dim)
-        overall_feat = overall_feat.to(device)
+        overall_result = [0] * batch_size
 
-        if len(inputs['reac_idx']) > 0:
-            this_mask = key2result['reactants']['batch_mask']
-            this_feat = key2result['reactants']['feat']
-            this_node = this_mask.shape[1]
-            overall_feat[inputs['reac_idx'], :this_node] = this_feat
-            batch_mask[inputs['reac_idx'], :this_node] = this_mask
+        update_result(
+            result=overall_result, idxes=inputs['reac_idx'],
+            vx=key2result['reactants'], key='product', mode='single'
+        )
+        update_result(
+            result=overall_result, idxes=inputs['prod_idx'],
+            vx=key2result['products'], key='reactants', mode='single'
+        )
+        update_result(
+            result=overall_result, idxes=inputs['rxn_idx'],
+            vx=key2result['rxn'], mode='multiple'
+        )
+        update_result(
+            result=overall_result, idxes=inputs['reag_idx'],
+            vx=key2result['reagents'], mode='multiple'
+        )
 
-        if len(inputs['prod_idx']) > 0:
-            this_mask = key2result['products']['batch_mask']
-            this_feat = key2result['products']['feat']
-            this_node = this_mask.shape[1]
-            overall_feat[inputs['prod_idx'], :this_node] = this_feat
-            batch_mask[inputs['prod_idx'], :this_node] = this_mask
-
-        if len(inputs['rxn_idx']) > 0:
-            this_mask = key2result['rxn']['batch_mask']
-            this_feat = key2result['rxn']['feat']
-            this_node = this_mask.shape[1]
-            overall_feat[inputs['rxn_idx'], :this_node] = this_feat
-            batch_mask[inputs['rxn_idx'], :this_node] = this_mask
-
-        if len(inputs['reag_idx']) > 0:
-            this_mask = key2result['reagents']['batch_mask']
-            this_feat = key2result['reagents']['feat']
-            this_node = this_mask.shape[1]
-            overall_feat[inputs['reag_idx'], :this_node] = this_feat
-            batch_mask[inputs['reag_idx'], :this_node] = this_mask
-
-        return overall_feat, batch_mask
+        return overall_result
 
     def forward_encoder(self, inputs, device, do_proj=True):
         """
